@@ -1,0 +1,21 @@
+{
+    "name": "MeshProcessing",
+    "rootNamespace": "",
+    "references": [
+        "GUID:63f0a3b76da44df4eb06704454845950",
+        "GUID:a7a4c34601384f9389d5c4207f3c6331",
+        "GUID:92fee4bb67d45a8428da8e9494760a76"
+    ],
+    "includePlatforms": [
+        "Editor",
+        "WSA"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,17 @@
+{
+    "name": "Datastructures",
+    "rootNamespace": "",
+    "references": [
+        "GUID:3590b38de86abb149bd882c1b2c3d2e0",
+        "GUID:6a326ed4a044b6c43ab6dfb9f6dd56b1"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

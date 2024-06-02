@@ -30,7 +30,7 @@ public class GridVisualizer : MonoBehaviour
     // Update is called once per frame
     IEnumerator DoGridUpdate()
     {
-        while (true) { 
+        /*while (true) { 
             float xStart = (float)(playerCam.position.x - numObjectsWidth * skipTiles * map.tileWidth * 0.5);
             float zStart = (float)(playerCam.position.z - numObjectsWidth * skipTiles * map.tileWidth * 0.5);
 
@@ -87,6 +87,7 @@ public class GridVisualizer : MonoBehaviour
             }
 
             yield return new WaitForSeconds(0.5f);
-        }
+        }*/
+        yield return null;
     }
 }

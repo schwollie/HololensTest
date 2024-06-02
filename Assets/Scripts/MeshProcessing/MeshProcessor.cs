@@ -1,11 +1,7 @@
-using Microsoft.MixedReality.Toolkit;
-using Microsoft.MixedReality.Toolkit.Experimental.SpatialAwareness;
-using Microsoft.MixedReality.Toolkit.SpatialAwareness;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
 using UnityEngine;
+using Microsoft.MixedReality.Toolkit;
+using Microsoft.MixedReality.Toolkit.SpatialAwareness;
 
 using SpatialAwarenessHandler = Microsoft.MixedReality.Toolkit.SpatialAwareness.IMixedRealitySpatialAwarenessObservationHandler<Microsoft.MixedReality.Toolkit.SpatialAwareness.SpatialAwarenessMeshObject>;
 
@@ -15,7 +11,7 @@ public class MeshProcessor : MonoBehaviour, SpatialAwarenessHandler
     IMixedRealitySpatialAwarenessMeshObserver observer;
 
     public Transform MainCam;
-    public SurfaceMeshesToPlanes meshToPlaneComponent;
+    //public SurfaceMeshesToPlanes meshToPlaneComponent;
     public GridMap gridMap;
 
     public float tolerance = 1.0f;
@@ -42,8 +38,8 @@ public class MeshProcessor : MonoBehaviour, SpatialAwarenessHandler
 
     private IEnumerator Init()
     {
-        
-        if (observer == null) 
+
+        if (observer == null)
         {
             Debug.LogWarning("NO observer!");
         }
@@ -59,14 +55,14 @@ public class MeshProcessor : MonoBehaviour, SpatialAwarenessHandler
     // Update is called once per frame
     void Update()
     {
-       Init();
-        
+        Init();
+
     }
 
     void ProcessMesh(Mesh mesh, bool OverwriteHeight = false)
     {
-        
-        Vector3[] vertices = mesh.vertices;
+
+        /*Vector3[] vertices = mesh.vertices;
         int[] triangles = mesh.triangles;
 
         for (int i = 0; i < triangles.Length; i += 3)
@@ -107,31 +103,31 @@ public class MeshProcessor : MonoBehaviour, SpatialAwarenessHandler
             if (tiles.Count > 10)
             {
                 continue;
-            }
-
-            
-            /*foreach (Tile tile in tiles)
-            {
-                // get all colliding meshes
-                RaycastHit[] hits = Physics.RaycastAll(tile.worldPos, Vector3.up, MainCam.position.y - maxVertexHeight, 31);
-
-                // Loop through all hits
-                foreach (RaycastHit hit in hits)
-                {
-                    // Access the collided mesh or object
-                    MeshRenderer meshRenderer = hit.collider.GetComponent<MeshRenderer>();
-                    if (meshRenderer != null)
-                    {
-                        meshRenderer.
-                    }
-                }
             }*/
 
-            tiles.ForEach(tile => tile.height = (maxVertexHeight > tile.height || OverwriteHeight ? maxVertexHeight : tile.height));
-            //Tile t = gridMap.GetTile(new Vector2(minX, minZ));
-            //t.height = maxVertexHeight;
-        }
+
+        /*foreach (Tile tile in tiles)
+        {
+            // get all colliding meshes
+            RaycastHit[] hits = Physics.RaycastAll(tile.worldPos, Vector3.up, MainCam.position.y - maxVertexHeight, 31);
+
+            // Loop through all hits
+            foreach (RaycastHit hit in hits)
+            {
+                // Access the collided mesh or object
+                MeshRenderer meshRenderer = hit.collider.GetComponent<MeshRenderer>();
+                if (meshRenderer != null)
+                {
+                    meshRenderer.
+                }
+            }
+        }*/
+
+        //tiles.ForEach(tile => tile.height = (maxVertexHeight > tile.height || OverwriteHeight ? maxVertexHeight : tile.height));
+        //Tile t = gridMap.GetTile(new Vector2(minX, minZ));
+        //t.height = maxVertexHeight;
     }
+
 
     void OnMeshChange(MixedRealitySpatialAwarenessEventData<SpatialAwarenessMeshObject> data)
     {
