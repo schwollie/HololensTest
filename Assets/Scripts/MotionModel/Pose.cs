@@ -29,6 +29,12 @@ public class DefaultPose : IPose
         this.rotation = Mathf.Repeat(rotation, 2.0f * Mathf.PI);
     }
 
+    public DefaultPose(Vector2 xy, float rotation)
+    {
+        this.pos = xy;
+        this.rotation = Mathf.Repeat(rotation, 2.0f * Mathf.PI);
+    }
+
     public IPose Aggregate(IPose other)
     {
         return new DefaultPose(pos.x + other.GetPos().x, pos.y + other.GetPos().y, rotation + other.GetRotation());

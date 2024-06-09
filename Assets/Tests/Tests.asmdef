@@ -6,7 +6,8 @@
         "UnityEditor.TestRunner",
         "PathPlanning",
         "MotionModel",
-        "Datastructures"
+        "Datastructures",
+        "Helpers"
     ],
     "includePlatforms": [
         "Editor"

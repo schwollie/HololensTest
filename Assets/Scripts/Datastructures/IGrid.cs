@@ -5,6 +5,8 @@ public interface IObstacleMap
 {
     bool IsFree(Vector2 pos);
 
+    float DistanceToObstacle(Vector2 pos);
+
     float Resolution();
 }
 

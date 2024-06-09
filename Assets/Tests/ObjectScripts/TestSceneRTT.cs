@@ -33,7 +33,7 @@ public class TestSceneRTT : MonoBehaviour
     void Start()
     {
         SetMapTexture();
-        occupancyMap = MapLoader.LoadMap(mapImage, (int)(mapImage.height / (map.localScale.y * 10)));
+        occupancyMap = MapLoader.LoadMap(mapImage, new Vector2(map.localScale.x * 10, map.localScale.y * 10));
 
         startPos = start.transform.position;
         startRot = start.transform.rotation.y;
@@ -53,6 +53,7 @@ public class TestSceneRTT : MonoBehaviour
         {
             path = GridRTTPathPlanner.Path(occupancyMap, new DefaultPose(startPos.x, startPos.z, (float)startRot),
                 new DefaultPose(targetPos.x, targetPos.z, (float)targetRot), 2);
+            
         }
         catch (NoPathException e) { Debug.LogException(e); path = new List<IPose>(); }
 

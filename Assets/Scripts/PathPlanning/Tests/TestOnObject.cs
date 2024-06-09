@@ -8,7 +8,7 @@ public class TestOnObject : MonoBehaviour
     SimpleMap map;
     private void Start()
     {
-        map = MapLoader.LoadMap("tests/VeryLargeMap");
+        //map = MapLoader.LoadMap("tests/VeryLargeMap");
     }
     void Update()
     {
