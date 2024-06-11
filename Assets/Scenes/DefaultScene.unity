@@ -365,7 +365,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1386473375
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -378,8 +378,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6fc0121f2ea98ed4994eab1204bf80c0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  tileWidth: 0.1
-  chunkTileCount: 100
+  cellSize: 0.1
+  chunkCellCount: 100
   minClearanceHeight: 1.5
 --- !u!4 &1386473376
 Transform:
@@ -527,7 +527,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1547323568
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -596,7 +596,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   MainCam: {fileID: 2147073795}
-  meshToPlaneComponent: {fileID: 1547323569}
   gridMap: {fileID: 1386473375}
   tolerance: 2
 --- !u!1 &1550372135
@@ -641,7 +640,6 @@ GameObject:
   m_Component:
   - component: {fileID: 2001713596}
   - component: {fileID: 2001713595}
-  - component: {fileID: 2001713597}
   m_Layer: 0
   m_Name: MixedRealityToolkit
   m_TagString: Untagged
@@ -677,18 +675,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2001713597
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2001713594}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 868feaaaeee122248958e04354e4b1f0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &2147073794
 GameObject:
   m_ObjectHideFlags: 0

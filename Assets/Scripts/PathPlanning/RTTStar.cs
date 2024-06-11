@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine.Profiling;
 using System.Collections;
+using static UnityEngine.GraphicsBuffer;
 
 
 public class RTTStar
@@ -20,9 +21,9 @@ public class RTTStar
 
     public bool IsFree(IPose pose)
     {
-        
+
         bool a = obstacleMap.IsFree(pose.GetPos());
-        
+
         return a;
     }
 
@@ -41,28 +42,28 @@ public class RTTStar
 
     private float CalcCost(IPose a, IPose b)
     {
-        
-        float distFac = 1; float rotFac = 1; float nodeFac = 0.05f; float obstFac = 1;
+
+        float distFac = 1; float rotFac = 1; float nodeFac = 0.05f; float obstFac = 0.2f;
 
         float rotCost = Mathf.Abs(Mathf.DeltaAngle(Mathf.Rad2Deg * a.GetRotation(), Mathf.Rad2Deg * b.GetRotation())) / 180;
         float distCost = (a.GetPos() - b.GetPos()).sqrMagnitude;
 
-        float distToObstacle = float.MaxValue; 
+        float distToObstacle = float.MaxValue;
         foreach (var vec in SampleVec(a.GetPos(), b.GetPos(), 5))
         {
             float d = obstacleMap.DistanceToObstacle(vec);
             distToObstacle = Mathf.Min(d, distToObstacle);
         }
 
-        float obstacleDistCost = distToObstacle == 0 ? 1 : 1 / distToObstacle;
-        
-        return /*rotCost * rotFac +*/ distCost * distFac + obstacleDistCost * obstFac /*+ nodeFac*/;
+        float obstacleDistCost = obstFac / (distToObstacle + 1); // clamp between 0 and 1
+
+        return /*rotCost * rotFac +*/ distCost * distFac + obstacleDistCost /*+ nodeFac*/;
     }
 
     /// @return if reachable and distance from @p from to next obstacle
     private bool IsReachable(IPose from, IPose to)
     {
-        
+
         int numSteps = (int)((from.GetPos() - to.GetPos()).magnitude / (obstacleMap.Resolution()));
         for (int i = 0; i <= numSteps; i++)
         {
@@ -73,13 +74,13 @@ public class RTTStar
                 return false;
             }
         }
-        
+
         return true;
     }
 
     /// @return a valid random pose from a given pose. If no pose was found in @p numTrys then null is returned
     private IPose NewValidPose(IPose pose, int numTrys = 10)
-    {   
+    {
         for (int i = 0; i < numTrys; i++)
         {
             float xOffset = RandomHelper.GenerateRandomFloatBothSigns(0.2f, 2f);
@@ -89,20 +90,18 @@ public class RTTStar
             IPose newPose = new DefaultPose(pose.GetPos().x + xOffset, pose.GetPos().y + yOffset, pose.GetRotation() + rotOffset);
             if (IsFree(newPose))
             {
-                
+
                 return newPose;
             }
         }
-        
+
         return null;
     }
 
     /// @return a new valid random pose in a given radius around start or target. If no pose was found in @p numTrys then null is returned
-    private IPose NewRandomPoseCircle(IPose start, IPose target, int numTrys = 20)
+    private IPose NewRandomPoseCircle(float rMax, Vector2 mid, int numTrys = 20)
     {
-        
-        float rMax = Mathf.Max((target.GetPos() - start.GetPos()).magnitude * RandomHelper.GenerateRandomFloat(1, 5), 10);
-        Vector2 mid = (target.GetPos() + start.GetPos()) / 2f;
+
         for (int i = 0; i < numTrys; i++)
         {
             Vector2 randPos = RandomHelper.RandomPointOnCircle(rMax);
@@ -110,17 +109,17 @@ public class RTTStar
             IPose newPose = new DefaultPose(mid.x + randPos.x, mid.y + randPos.y, rot);
             if (IsFree(newPose))
             {
-                
+
                 return newPose;
-           }
+            }
         }
-        
+
         return null;
     }
 
     private List<IPose> GenerateRandomPosesFromExistingNodes(ITree<IPose> tree, int maxNewNodesPerIt)
     {
-        
+
         var toBeExtendedNodes = tree.RandomSubSample(maxNewNodesPerIt);
         var poses = new List<IPose>();
         foreach (var node in toBeExtendedNodes)
@@ -129,35 +128,26 @@ public class RTTStar
             if (newPose == null) { continue; }
             poses.Add(newPose);
         }
-        
+
         return poses;
     }
-    
+
     private List<IPose> GenerateRandomPosesWholeMap(IPose startPose, IPose targetPose, int maxNewNodesPerIt)
     {
-        
+
         List<IPose> poses = new List<IPose>();
+
+        float rMax = (targetPose.GetPos() - startPose.GetPos()).magnitude * 2;
+        Vector2 mid = (targetPose.GetPos() + startPose.GetPos()) / 2f;
 
         for (int i = 0; i < maxNewNodesPerIt; i++)
         {
-            IPose newPose = NewRandomPoseCircle(startPose, targetPose);
+            IPose newPose = NewRandomPoseCircle(rMax, mid);
             if (newPose == null) { continue; }
             poses.Add(newPose);
         }
-        
+
         return poses;
-    }
-
-    public List<IPose> FinalizePath(List<Node<IPose>> targetToStart)
-    {
-        List<IPose> path = new List<IPose>();
-        targetToStart.Reverse();
-        foreach (var node in targetToStart)
-        {
-            path.Add(node.value);
-        }
-        return path;
-
     }
 
     /// return a pose from @p from to @p to which is closest to @p to but reachable from @p from
@@ -180,7 +170,7 @@ public class RTTStar
                 return validPose;
             }
             validPose = newPose;
-            currentPosFrom = newPose.GetPos(); 
+            currentPosFrom = newPose.GetPos();
         }
 
         if ((validPose.GetPos() - from.GetPos()).magnitude < minDist) { return null; }
@@ -188,51 +178,79 @@ public class RTTStar
     }
 
     /// @return ascending neighbour nodes given @p radius around @p node. List is sorted by cost.
-    private List<Node<IPose>> GetReachableNeighbours(ITree<IPose> graph, IPose pose, float radius = 3)
+    private List<Node<IPose>> GetReachableNeighbours(ITree<IPose> graph, IPose pose, float radius = 1f, int limit = 200)
     {
         List<Node<IPose>> neighboursAscendingDistance = graph.Neighbours(pose, radius, CalcCost);
-        neighboursAscendingDistance = neighboursAscendingDistance.Where(n => IsReachable(n.value, pose)).ToList();
-        return neighboursAscendingDistance;
+        List<Node<IPose>> reachableNeighbours = new();
+        while (neighboursAscendingDistance.Count > 0 && reachableNeighbours.Count < limit)
+        {
+            var n = neighboursAscendingDistance.First();
+            if (IsReachable(n.value, pose))
+            {
+                reachableNeighbours.Add(n);
+            }
+            neighboursAscendingDistance.Remove(n);
+        }
+        return reachableNeighbours;
     }
 
-    public List<IPose> FindPath(IPose startPose, IPose targetPose, int maxIterations = 50, int maxNewNodesPerIt = 200)
+    public List<IPose> FindPath(IPose startPose, IPose targetPose, int maxNodes = 500)
     {
-        ITree<IPose> graph = new SimpleTree<IPose>();
 
-        var startNode = graph.Add(startPose);
+        var startNode = new Node<IPose>(startPose);
+        var targetNode = new Node<IPose>(targetPose);
+
         startNode.UpdateCost(0);
 
+        List<Node<IPose>> allNodes = GenerateRandomPosesWholeMap(startPose, targetPose, maxNodes).Select(n => new Node<IPose>(n)).ToList();
+        HashSet<Node<IPose>> discoveredNodes = new();
+        SortedSet<Node<IPose>> toDiscover = new();
+        toDiscover.Add(startNode);
+        allNodes.Add(startNode);
+        allNodes.Add(targetNode);
+        ITree<IPose> graph = new FastTree<IPose>(allNodes);
 
-        for (int it = 0; it < maxIterations; it++)
+        while (toDiscover.Count > 0)
         {
-            List<IPose> newPoses = GenerateRandomPosesWholeMap(startPose, targetPose, maxNewNodesPerIt);
+            var nodeToDiscover = toDiscover.First();
+            toDiscover.Remove(toDiscover.First());
+            discoveredNodes.Add(nodeToDiscover);
 
-            foreach (var randomPose in newPoses)
+            var neighboursAscendingDistance = GetReachableNeighbours(graph, nodeToDiscover.value);
+            if (neighboursAscendingDistance.Count == 0) { continue; } // no neighbours can reach new node so continue
+
+            if (nodeToDiscover != startNode)
             {
-                var closestNode = graph.GetClosest(randomPose, CalcCost);
-                IPose newPose = LinearReachablePoseSearch(closestNode.value, randomPose);
-                if (newPose == null) { continue; }
-                var neighboursAscendingDistance = GetReachableNeighbours(graph, newPose);
-                if (neighboursAscendingDistance.Count == 0) { continue; } // no neighbours can reach new node so continue
+                var closest = neighboursAscendingDistance.Where(n => discoveredNodes.Contains(n)).FirstOrDefault();
+                if (closest == null) { continue; }
+                graph.AddEdgeOverride(closest, nodeToDiscover, CalcCost(neighboursAscendingDistance[0].value, nodeToDiscover.value));
+                neighboursAscendingDistance.Remove(closest);
+            }
 
-                var newNode = graph.Add(newPose);
-                graph.AddEdgeOverride(neighboursAscendingDistance[0], newNode, CalcCost(neighboursAscendingDistance[0].value, newPose));
-                neighboursAscendingDistance.RemoveAt(0);
-
-                foreach (var neighbour in neighboursAscendingDistance)
+            foreach (var neighbour in neighboursAscendingDistance)
+            {
+                if (!discoveredNodes.Contains(neighbour))
                 {
-                    float cost = CalcCost(newNode.value, neighbour.value);
-                    if (newNode.GetCost() + cost < neighbour.GetCost())
+                    toDiscover.Add(neighbour);
+                }
+                float cost = CalcCost(nodeToDiscover.value, neighbour.value);
+                if (nodeToDiscover.GetCost() + cost < neighbour.GetCost())
+                {
+                    bool wasAdded = toDiscover.Remove(neighbour);
+                    // will override predecessor and thereby remain tree structure
+                    graph.AddEdgeOverride(nodeToDiscover, neighbour, cost);
+                    if (wasAdded)
                     {
-                        // will override predecessor and thereby remain tree structure
-                        graph.AddEdgeOverride(newNode, neighbour, cost);
+                        toDiscover.Add(neighbour);
                     }
                 }
             }
         }
 
+
         foreach (var node in graph.Neighbours(startPose, 100, CalcCost))
         {
+            if (node.edgesSuccessor.Count == 0) { continue; }
             GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
             cube.transform.position = new Vector3(node.value.GetPos().x, .1f, node.value.GetPos().y);
             cube.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
@@ -240,13 +258,19 @@ public class RTTStar
         }
 
         // finaly add target node and check if path was found
-        var targetNode = graph.Add(targetPose);
-        var closestNeighbours = GetReachableNeighbours(graph, targetPose);
-        if (closestNeighbours.Count == 0) { throw new NoPathException(); }
-        graph.AddEdgeOverride(closestNeighbours[0], targetNode, CalcCost(closestNeighbours[0].value, targetPose));
+        if (targetNode.predecessorEdge == null) { throw new NoPathException(); }
 
-
-        return FinalizePath(FastTree<IPose>.GetPathToRoot(targetNode));
+        return FinalizePath(ITree<IPose>.GetPathToRoot(targetNode));
+    }
+    public List<IPose> FinalizePath(List<Node<IPose>> targetToStart)
+    {
+        List<IPose> path = new List<IPose>();
+        targetToStart.Reverse();
+        foreach (var node in targetToStart)
+        {
+            path.Add(node.value);
+        }
+        return path;
     }
 }
 
