@@ -7,7 +7,9 @@
         "PathPlanning",
         "MotionModel",
         "Datastructures",
-        "Helpers"
+        "Helpers",
+        "KDTree",
+        "Map"
     ],
     "includePlatforms": [
         "Editor"

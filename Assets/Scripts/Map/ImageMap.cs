@@ -1,6 +1,10 @@
-﻿using System.Collections;
+﻿using Supercluster.KDTree;
+using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using UnityEngine;
 
 public class SimpleMap : IObstacleMap
@@ -9,11 +13,13 @@ public class SimpleMap : IObstacleMap
     float NumPixelsPerMeter;
     Vector2 size;
 
-    float[,] distanceMap;
-    static float distanceMapResolution = 0.2f;
+    KDTree<float, float[]> obstacles;
 
     private static int DebugPrintMaxCols = 60;
     static float MinResolution = 0.2f;
+
+    float[,] distanceMap;
+    float distanceMapResolution = 0.1f;
 
     public SimpleMap(Texture2D refereneMap, Vector2 size)
     {
@@ -34,7 +40,25 @@ public class SimpleMap : IObstacleMap
         this.map = refereneMap;
         this.NumPixelsPerMeter = map.width / size.x;
 
+        List<float[]> obstaclePixels = new List<float[]>();
+        for (int x = 0; x < map.width; x++)
+        {
+            for (int y = 0; y < map.height; y++)
+            {
+                if (!IsFree(x, y))
+                {
+                    obstaclePixels.Add(new float[] {((float)x)/map.width * size.x, ((float)y) / map.height* size.y });
+                }
+            }
+        }
+        
+        this.obstacles = new(2, obstaclePixels.ToArray(), obstaclePixels.ToArray(), GeneralHelpers.DistanceFunc2D);
         GenerateDistanceMap();
+    }
+
+    public Vector2 RandomPosOnMap()
+    {
+        return new Vector2(RandomHelper.GenerateRandomFloat(0, size.x), RandomHelper.GenerateRandomFloat(0, size.y));
     }
 
     Texture2D Resize(Texture2D texture2D, int targetX, int targetY)
@@ -57,16 +81,12 @@ public class SimpleMap : IObstacleMap
         {
             for (int y = 0; y < distanceMap.GetLength(1); y++)
             {
-                distanceMap[x, y] = 100;
-                Vector2 pos = new Vector2(x*distanceMapResolution, y*distanceMapResolution);
-                for (float r = 0; r < 2; r+=Resolution())
-                {
-                    if (!IsFree(new Vector2(pos.x+r, pos.y+ r)) || !IsFree(new Vector2(pos.x - r, pos.y + r)) || !IsFree(new Vector2(pos.x + r, pos.y - r)) || !IsFree(new Vector2(pos.x - r, pos.y - r)))
-                    {
-                        distanceMap[x, y] = r;
-                        break;
-                    }
-                }
+                float[] pos = new float[] { (float)x/ distanceMap.GetLength(0) * size.x, (float)y / distanceMap.GetLength(1) * size.y };
+                float distance = (float)GeneralHelpers.DistanceFunc2D(obstacles.NearestNeighbors(pos, 1).First().Item1, pos);
+                distance = Mathf.Min(pos[0], Mathf.Min(pos[1], distance));
+                distance = Mathf.Min(size.x-pos[0], Mathf.Min(size.y-pos[1], distance));
+                if (distance < Resolution()) { distance = 0; }
+                distanceMap[x, y] = distance;
             }
         }
     }
@@ -88,7 +108,7 @@ public class SimpleMap : IObstacleMap
 
     public bool IsFree(Vector2 xy)
     {
-        return IsFree((int)(xy.x * NumPixelsPerMeter), (int)(xy.y * NumPixelsPerMeter));
+        return (xy.x > 0 && xy.x <= size.x && xy.y > 0 && xy.y <= size.y) && DistanceToObstacle(xy) > Resolution();
     }
 
     private float DistanceToObstacle(int x, int y)
@@ -99,20 +119,23 @@ public class SimpleMap : IObstacleMap
         }
 
         return distanceMap[x, y];
+        
     }
 
     public float DistanceToObstacle(Vector2 xy)
     {
-        return DistanceToObstacle((int)(xy.x / distanceMapResolution), (int)(xy.y / distanceMapResolution));
+        /*float[] pos = new float[] { xy.x, xy.y};
+        return (float)GeneralHelpers.DistanceFunc2D(obstacles.NearestNeighbors(pos, 1).First().Item1, pos);*/
+        return DistanceToObstacle((int)(xy.x / size.x * distanceMap.GetLength(0)), (int)(xy.y / size.y * distanceMap.GetLength(1)));
     }
 
     static bool IsAlmostWhite(Color color)
     {
-        float threshold = 0.8f; // Adjust threshold for color tolerance (0.0 - 1.0)
+        float threshold = 0.9f; // Adjust threshold for color tolerance (0.0 - 1.0)
         return color.r >= threshold && color.g >= threshold && color.b >= threshold;
     }
 
-    public void PrintMap(List<IPose> path = null)
+    public void PrintMap(List<Vector2> path = null)
     {
 
         Vector2Int checks = new Vector2Int(Mathf.Max(1, map.width / DebugPrintMaxCols), Mathf.Max(1, map.height / DebugPrintMaxCols));
@@ -136,9 +159,9 @@ public class SimpleMap : IObstacleMap
                 string c = isFree ? "◇" : "◆";
                 if (path != null)
                 {
-                    foreach (IPose p in path)
+                    foreach (var p in path)
                     {
-                        if ((p.GetPos() - new Vector2(x / NumPixelsPerMeter, y / NumPixelsPerMeter)).magnitude < (map.width / (NumPixelsPerMeter * DebugPrintMaxCols)))
+                        if ((p - new Vector2(x / NumPixelsPerMeter, y / NumPixelsPerMeter)).magnitude < (map.width / (NumPixelsPerMeter * DebugPrintMaxCols)))
                         {
                             c = "◆";
                         }
@@ -148,7 +171,7 @@ public class SimpleMap : IObstacleMap
 
                 row += c;
             }
-            Debug.Log(row);
+            UnityEngine.Debug.Log(row);
         }
     }
 }

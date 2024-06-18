@@ -1,8 +1,8 @@
 {
-    "name": "MotionModel",
+    "name": "Map",
     "rootNamespace": "",
     "references": [
-        "GUID:de303125fff5db14990823af03f0040d",
+        "GUID:b1ac90a58cf922f4fb4a599c91d6b845",
         "GUID:6a326ed4a044b6c43ab6dfb9f6dd56b1"
     ],
     "includePlatforms": [],

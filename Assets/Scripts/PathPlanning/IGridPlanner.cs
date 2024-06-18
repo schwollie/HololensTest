@@ -24,7 +24,7 @@ public interface IGridPlannerCell
 
 public interface IGridPlanner
 {
-    public static List<IPose> Path(IObstacleMap grid, Vector2Int startPos, Vector2Int targetPos)
+    public static List<IConfiguration> Path(IObstacleMap grid, Vector2Int startPos, Vector2Int targetPos)
     {
         throw new NotImplementedException();
     }

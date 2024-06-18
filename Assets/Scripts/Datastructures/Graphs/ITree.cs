@@ -1,7 +1,9 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Runtime.ConstrainedExecution;
+using System.Diagnostics;
+
+using UnityEngine;
+
 
 public class Edge<T>
 {
@@ -54,6 +56,17 @@ public class Node<T> : IComparable
         return cost;
     }
 
+    public List<Node<T>> Childs(bool recursive = true)
+    {
+        List<Node<T>> childs = new List<Node<T>> {  };
+        foreach (var edge in edgesSuccessor)
+        {
+            childs.Add(edge.nodeTo);
+            childs.AddRange(edge.nodeTo.Childs());
+        }
+        return childs;
+    }
+
     public void UpdateCost(float cost, Node<T> start = null)
     {
         if (start == this) { return; }
@@ -68,8 +81,9 @@ public class Node<T> : IComparable
 
     public int CompareTo(object obj)
     {
+        if (this == obj) {  return 0; }
         Node<T> c = (Node<T>)obj;
-        return cost.CompareTo(c.cost);
+        return this.cost.CompareTo(c.cost);
     }
 }
 
@@ -77,7 +91,7 @@ public interface ITree<T>
 {
     public Node<T> Add(T value);
 
-    public void AddAll(T value) { throw new NotImplementedException(""); }
+    public List<Node<T>> AddAll(List<T> value) { throw new NotImplementedException(""); }
 
     public IEnumerable<Node<T>> RandomSubSample(int maxLength);
 
@@ -87,7 +101,9 @@ public interface ITree<T>
 
     public delegate float GetCost(T a, T b);
     public Node<T> GetClosest(T value, GetCost costFunc);
-    public List<Node<T>> Neighbours(T value, float maxDistance, GetCost costFunc);
+    public List<Node<T>> Neighbours(T value, float maxDistance);
+
+    public List<Node<T>> AllNodes();
 
 
     public static List<Node<T>> GetPathToRoot(Node<T> node)

@@ -3,34 +3,53 @@ using System.Collections.Generic;
 using System.Linq;
 using Supercluster.KDTree;
 
-public class FastTree<T> : ITree<T> where T : IPose
+public class FastTree<T> : ITree<T> where T : IConfiguration
 {
     KDTree<float, Node<T>> tree;
+    List<Node<T>> nodes = new();
 
     public FastTree(List<Node<T>> nodes)
+    {
+        this.nodes = nodes;
+        CreateTree();
+    }
+
+    private void CreateTree()
     {
         float[][] points = new float[nodes.Count][];
         for (int i = 0; i < nodes.Count; i++)
         {
-            points[i] = ToArray((IPose)nodes[i].value);
+            points[i] = ToArray((IConfiguration)nodes[i].value);
         }
-        this.tree = new(2, points, nodes.ToArray(), (float[] a, float[] b) => Math.Sqrt(Math.Pow(a[0] - b[0], 2) + Math.Pow(a[1] - b[1], 2)));
+        this.tree = new(2, points, nodes.ToArray(), GeneralHelpers.DistanceFunc2D);
     }
 
-    private float[] ToArray(IPose vec)
+    private float[] ToArray(IConfiguration vec)
     {
         return new float[] { vec.GetPos().x, vec.GetPos().y };
     }
 
-    public void AddAll(T value) { throw new NotImplementedException(""); }
+    public List<Node<T>> AddAll(List<T> value) {
+
+        List<Node<T>> newNodes = new();
+        foreach (T newVal in value)
+        {
+            var newNode = new Node<T>(newVal);
+            newNodes.Add(newNode);
+            nodes.Add(newNode);
+        }
+
+        CreateTree();
+
+        return newNodes;
+    }
 
     public Node<T> Add(T value)
     {
-        /*Node<T> node = new(value);
-        tree.Add(ToArray(value), node);
-
-        return node;*/
-        return null;
+        var node = new Node<T>(value);
+        nodes.Add(node);
+        CreateTree();
+        return node;
     }
 
     public IEnumerable<Node<T>> RandomSubSample(int maxLength)
@@ -51,6 +70,8 @@ public class FastTree<T> : ITree<T> where T : IPose
         /*node.Remove();
         tree.RemoveAt(ToArray(node.value));*/
     }
+
+    public List<Node<T>> AllNodes() { return nodes; }
 
     public void AddEdgeOverride(Node<T> from, Node<T> to, float cost)
     {
@@ -80,15 +101,10 @@ public class FastTree<T> : ITree<T> where T : IPose
         return nearest[0].Item2;
     }
 
-    public List<Node<T>> Neighbours(T value, float maxDistance, ITree<T>.GetCost costFunc)
+    public List<Node<T>> Neighbours(T value, float maxDistance)
     {
         var neighbours = tree.RadialSearch(ToArray(value), maxDistance).ToList().Select(n => n.Item2).
             Where(n => n.value.GetPos() != value.GetPos()).ToList();
-
-        neighbours.Sort((Node<T> c1, Node<T> c2) =>
-        {
-            return costFunc(value, c1.value).CompareTo(costFunc(value, c2.value));
-        });
 
         return neighbours;
     }

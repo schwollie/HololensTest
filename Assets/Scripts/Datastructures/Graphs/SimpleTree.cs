@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-public class SimpleTree<T> : ITree<T> where T : IPose
+public class SimpleTree<T> : ITree<T> where T : IConfiguration
 {
     public readonly List<Node<T>> nodes = new List<Node<T>>();
 
@@ -71,7 +71,7 @@ public class SimpleTree<T> : ITree<T> where T : IPose
         return closestNode;
     }
     /// @return neighbour nodes in a given range @p maxDistance in ascending order of the distance determined by @p distanceFunc
-    public List<Node<T>> Neighbours(T value, float maxDistance, ITree<T>.GetCost costFunc)
+    public List<Node<T>> Neighbours(T value, float maxDistance)
     {
         List<Node<T>> neighbours;
         if (nodes.Count() > 100)
@@ -88,10 +88,6 @@ public class SimpleTree<T> : ITree<T> where T : IPose
             }
         }
 
-        neighbours.Sort((Node<T> c1, Node<T> c2) =>
-        {
-            return costFunc(value, c1.value).CompareTo(costFunc(value, c2.value));
-        });
         return neighbours;
     }
 
@@ -132,4 +128,8 @@ public class SimpleTree<T> : ITree<T> where T : IPose
         return (a.GetPos() - b.GetPos()).magnitude;
     }
 
+    public List<Node<T>> AllNodes()
+    {
+        return nodes;
+    }
 }

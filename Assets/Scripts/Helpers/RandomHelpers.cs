@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
+using Random = System.Random;
 
 public class RandomHelper
 {
+    static Random random = new Random(1);
     /// <summary>
     /// Generates a random sub sample of the given list. The sub sample will always be smaller or equal in size of the original list.
     /// </summary>
@@ -10,22 +13,24 @@ public class RandomHelper
     /// <param name="list"></param>
     /// <param name="maxElements">The maximum number of elements in the sample.</param>
     /// <returns>random sample of the original list</returns>
-    public static List<T> ReservoirSample<T>(List<T> list, int maxElements, Random random = null)
+    public static List<T> ReservoirSample<T>(List<T> list, int maxElements, System.Random random = null)
     {
         GetRandom(random, out random);
 
+        if (list.Count <= 2) { return list; }
+
         // Implementation from Wikipedia https://en.wikipedia.org/wiki/Reservoir_sampling
-        maxElements = Math.Min(maxElements, list.Count);
+        maxElements = Mathf.Min(maxElements, list.Count-1);
         var reservoir = list.GetRange(0, maxElements);
 
         // Weight initialization
-        double weight = Math.Exp(Math.Log(random.NextDouble()) / maxElements);
+        double weight = Mathf.Exp(Mathf.Log((float)random.NextDouble()) / maxElements);
 
         int i = maxElements;
         while (i <= list.Count)
         {
             // Increment index based on weight and random number
-            int step = (int)Math.Floor(Math.Log(random.NextDouble()) / Math.Log(1 - weight)) + 1;
+            int step = (int)Mathf.Floor(Mathf.Log((float)random.NextDouble()) / Mathf.Log((float)(1 - weight))) + 1;
             i += step;
 
             // Check if within list bounds
@@ -36,7 +41,7 @@ public class RandomHelper
                 reservoir[randomIndex] = list[i - 1];
 
                 // Update weight
-                weight *= Math.Exp(Math.Log(random.NextDouble()) / maxElements);
+                weight *= Mathf.Exp(Mathf.Log((float)random.NextDouble()) / maxElements);
             }
         }
 
@@ -55,7 +60,7 @@ public class RandomHelper
         GetRandom(random, out random);
 
         // Implementation from Wikipedia https://en.wikipedia.org/wiki/Reservoir_sampling
-        maxElements = Math.Min(maxElements, count);
+        maxElements = Mathf.Min(maxElements, count);
         var reservoir = new List<int>(maxElements);
 
         // Initialize reservoir with first maxElements elements
@@ -65,13 +70,13 @@ public class RandomHelper
         }
 
         // Weight initialization
-        double weight = Math.Exp(Math.Log(random.NextDouble()) / maxElements);
+        double weight = Mathf.Exp(Mathf.Log((float)random.NextDouble()) / maxElements);
 
         int i = maxElements;
         while (i <= count)
         {
             // Increment index based on weight and random number
-            int step = (int)Math.Floor(Math.Log(random.NextDouble()) / Math.Log(1 - weight)) + 1;
+            int step = (int)Mathf.Floor(Mathf.Log((float)random.NextDouble()) / Mathf.Log((float)(1 - weight))) + 1;
             i += step;
 
             // Check if within theoretical list bounds
@@ -82,11 +87,19 @@ public class RandomHelper
                 reservoir[randomIndex] = i - 1;
 
                 // Update weight
-                weight *= Math.Exp(Math.Log(random.NextDouble()) / maxElements);
+                weight *= Mathf.Exp(Mathf.Log((float)random.NextDouble()) / maxElements);
             }
         }
 
         return reservoir;
+    }
+
+    public static int GenerateRandomInt(int min, int max, Random random = null)
+    {
+        GetRandom(random, out random);
+
+        int num = random.Next(min, max);
+        return num;
     }
 
     public static float GenerateRandomFloat(float min, float max, Random random = null)
@@ -114,11 +127,11 @@ public class RandomHelper
     {
         GetRandom(random, out random);
 
-        double rSample = Math.Sqrt(random.NextDouble()) * radius;
-        double theta = random.NextDouble() * 2f * Math.PI;
+        double rSample = Mathf.Sqrt((float)random.NextDouble()) * radius;
+        double theta = random.NextDouble() * 2f * Mathf.PI;
 
-        return new UnityEngine.Vector2((float)(rSample * Math.Cos(theta)), (float)(rSample * Math.Sin(theta)));
+        return new UnityEngine.Vector2((float)(rSample * Mathf.Cos((float)theta)), (float)(rSample * Mathf.Sin((float)theta)));
     }
 
-    private static void GetRandom(in Random rIn, out Random rOut) { if (rIn == null) { rOut = new Random(); } rOut = rIn; }
+    private static void GetRandom(in Random rIn, out Random rOut) { if (rIn == null) { rOut = random; } rOut = rIn; }
 }

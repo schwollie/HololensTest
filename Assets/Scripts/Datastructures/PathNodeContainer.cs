@@ -16,19 +16,19 @@ public struct Neighbour<Node>
     }
 }
 
-public class NodeStorage<Node> where Node : IPose, new()
+public class NodeStorage<Node> where Node : IConfiguration, new()
 {
-    HashSet<IPose> nodes = new HashSet<IPose>();
+    HashSet<IConfiguration> nodes = new HashSet<IConfiguration>();
 
     public int GetCount() { return nodes.Count; }
-    public Node GetNode(IPose pose)
+    public Node GetNode(IConfiguration pose)
     {
-        IPose outNode = pose;
+        IConfiguration outNode = pose;
         bool success = nodes.TryGetValue(pose, out outNode);
         if (!success)
         {
             Node n = new Node();
-            n.Fill(pose);
+            n.SetConfig(pose.Configuration());
             nodes.Add(n);
             return (Node)n;
         }
@@ -36,16 +36,16 @@ public class NodeStorage<Node> where Node : IPose, new()
     }
 
     /// return neighbours and the cost associated with reaching them
-    public List<Neighbour<Node>> Neighbours(IPose currentPose, IMotionModel model)
+    public List<Neighbour<Node>> Neighbours(IConfiguration currentPose, MotionModel model)
     {
         List<Neighbour<Node>> neighbours = new List<Neighbour<Node>>();
 
-        var motionNeighbours = model.NeighbourCosts();
+        /*var motionNeighbours = model.NeighbourCosts();
         foreach (var mNode in motionNeighbours)
         {
             var node = GetNode(mNode.Item2.Aggregate(currentPose));
             neighbours.Add(new Neighbour<Node>(mNode.Item1, node));
-        }
+        }*/
 
 
         return neighbours;

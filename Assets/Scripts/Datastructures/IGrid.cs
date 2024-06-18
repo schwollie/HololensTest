@@ -1,15 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public interface IObstacleMap
-{
-    bool IsFree(Vector2 pos);
-
-    float DistanceToObstacle(Vector2 pos);
-
-    float Resolution();
-}
-
 public interface IGridTransform2D
 {
     public Vector2Int Pos2CellPos(Vector2 pos);

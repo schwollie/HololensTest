@@ -5,7 +5,7 @@ using UnityEngine.Profiling;
 
 public class TestOnObject : MonoBehaviour
 {
-    SimpleMap map;
+    //SimpleMap map;
     private void Start()
     {
         //map = MapLoader.LoadMap("tests/VeryLargeMap");
