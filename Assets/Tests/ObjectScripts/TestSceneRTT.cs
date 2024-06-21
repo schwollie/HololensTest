@@ -21,9 +21,6 @@ public class TestSceneRTT : MonoBehaviour
 
     private List<IConfiguration> path = new List<IConfiguration>();
 
-    bool _threadRunning;
-    Thread _thread;
-
     Vector3 startPos;
     double startRot;
     Vector3 targetPos;
@@ -38,7 +35,7 @@ public class TestSceneRTT : MonoBehaviour
     void Start()
     {
         SetMapTexture();
-        occupancyMap = MapLoader.LoadMap(mapImage, new Vector2(this.gameObject.transform.localScale.x* 10, this.gameObject.transform.localScale.z * 10));
+        occupancyMap = MapLoader.LoadMap(mapImage, new Vector2(this.gameObject.transform.localScale.x * 10, this.gameObject.transform.localScale.z * 10));
 
         startPos = agent.transform.position;
         startRot = agent.transform.rotation.y;
@@ -59,7 +56,7 @@ public class TestSceneRTT : MonoBehaviour
         {
             path = GridRTTPathPlanner.Path(occupancyMap, model, new SimpleConfiguration(startPos.x, startPos.z, (float)startRot),
                 new SimpleConfiguration(targetPos.x, targetPos.z, (float)targetRot), 2);
-            
+
         }
         catch (NoPathException e) { Debug.LogException(e); path = new List<IConfiguration>(); }
 
@@ -80,6 +77,7 @@ public class TestSceneRTT : MonoBehaviour
         }
         else { newRun = false; }
         GeneratePath();
+        ShowPathFollowing();
     }
 
     private void SetMapTexture()
@@ -98,8 +96,6 @@ public class TestSceneRTT : MonoBehaviour
         {
             lineRenderer.SetPosition(i, new Vector3(path[i].GetPos().x, 0.1f, path[i].GetPos().y));
         }
-
-        ShowPathFollowing();
     }
 
 
@@ -109,7 +105,8 @@ public class TestSceneRTT : MonoBehaviour
     void ShowPathFollowing()
     {
         // create animation gameobject if not created yet
-        if (animationAgent == null) {
+        if (animationAgent == null)
+        {
             // Create a new GameObject
             animationAgent = new GameObject("AnimationAgent");
 
@@ -133,7 +130,7 @@ public class TestSceneRTT : MonoBehaviour
         }
 
         // if path exists lerp trough it
-        if (path.Count <= 1) { animationAgent.SetActive(false); return;  }
+        if (path.Count <= 1) { animationAgent.SetActive(false); return; }
         animationAgent.SetActive(true);
         try
         {
@@ -153,32 +150,16 @@ public class TestSceneRTT : MonoBehaviour
 
             animationAgent.transform.position = GeneralHelpers.Vec2ToVec3(current.GetPos());
             animationAgent.transform.eulerAngles = new Vector3(0, Mathf.Rad2Deg * current.GetRotation(), 0);
-        } catch (Exception)
+        }
+        catch (Exception)
         {
 
         }
 
         step += SpeedAnimation;
-        if ( step >= 1)
+        if (step >= 1)
         {
             step = 0;
         }
-    }
-
-    void OnDisable()
-    {
-        // If the thread is still running, we should shut it down,
-        // otherwise it can prevent the game from exiting correctly.
-        if (_threadRunning)
-        {
-            // This forces the while loop in the ThreadedWork function to abort.
-            _threadRunning = false;
-
-            // This waits until the thread exits,
-            // ensuring any cleanup we do after this is safe. 
-            _thread.Join();
-        }
-
-        // Thread is guaranteed no longer running. Do other cleanup tasks.
     }
 }

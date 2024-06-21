@@ -19,7 +19,7 @@ public class RTTStar
 
     private float CalcCost(IConfiguration a, IConfiguration b, bool includeObstacles = true)
     {
-        float distFac = 1; float rotFac = 1.0f; float nodeFac = 0f; float obstFac = 1.0f;
+        float distFac = 1; float rotFac = 1.0f; float nodeFac = 0.3f; float obstFac = 1.0f; float driveSidewardsFac = 2.0f;
 
         float rotCost = Mathf.Abs(Mathf.DeltaAngle(Mathf.Rad2Deg * a.GetRotation(), Mathf.Rad2Deg * b.GetRotation())) / 180;
         rotCost = rotCost * rotCost;
@@ -41,8 +41,11 @@ public class RTTStar
             obstacleDistCost = 0;
         }
 
+        float driveSidewardsCost = Mathf.Abs(motionModel.NormalAngle() - a.GetRotation()) + Mathf.Abs(motionModel.NormalAngle() - b.GetRotation());
+        driveSidewardsCost /= 4 * Mathf.PI;
+
         //return distCost;
-        return rotCost * rotFac + distCost * distFac + obstacleDistCost + nodeFac;
+        return rotCost * rotFac + distCost * distFac + obstacleDistCost + driveSidewardsCost * driveSidewardsFac + nodeFac;
     }
 
     /// @return a valid random pose from a given pose. If no pose was found in @p numTrys then null is returned
@@ -139,6 +142,11 @@ public class RTTStar
         var startNode = new Node<IConfiguration>(startPose);
         var targetNode = new Node<IConfiguration>(targetPose);
 
+        if (!motionModel.IsFree(startPose, obstacleMap) || !motionModel.IsFree(startPose, obstacleMap))
+        {
+            throw new NoPathException("Start or target Position is not valid");
+        }
+
         startNode.UpdateCost(0);
 
         List<Node<IConfiguration>> allNodes = GenerateRandomPosesWholeMap(startPose, targetPose, nodesPerSquareMeter).Select(n => new Node<IConfiguration>(n)).ToList();
@@ -154,12 +162,13 @@ public class RTTStar
 
         while (toDiscover.Count > 0)
         {
-            var nodeToDiscover = toDiscover.AsParallel().Aggregate((a,b) => 
+            var nodeToDiscover = toDiscover.AsParallel().Aggregate((a, b) =>
             (a.GetCost() + CalcCost(a.value, targetPose)).CompareTo(b.GetCost() + CalcCost(b.value, targetPose)) < 0 ? a : b);
             // minimal node with heuristic
 
             bool worked = toDiscover.Remove(nodeToDiscover);
-            if (!worked) { 
+            if (!worked)
+            {
                 throw new Exception("");
             }
 
@@ -171,8 +180,9 @@ public class RTTStar
             {
                 var shortestNeighbourList = neighbours.Where(n => discoveredNodes.Contains(n)).ToList();
                 var closest = shortestNeighbourList.FirstOrDefault();
-                if (closest == null) { 
-                    continue; 
+                if (closest == null)
+                {
+                    continue;
                 }
                 graph.AddEdgeOverride(closest, nodeToDiscover, CalcCost(closest.value, nodeToDiscover.value));
                 neighbours.Remove(closest);
@@ -201,12 +211,12 @@ public class RTTStar
 
         foreach (var node in graph.Neighbours(startPose, 100))
         {
-            //if (node.edgesSuccessor.Count == 0) { continue; }
+            if (node.edgesSuccessor.Count == 0) { continue; }
             GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
             GameObject.Destroy(cube, 5f);
             cube.transform.position = new Vector3(node.value.GetPos().x, .1f, node.value.GetPos().y);
             cube.transform.localScale = new Vector3(0.1f, 0.1f, 0.2f);
-            cube.transform.Rotate(new Vector3(0,Mathf.Rad2Deg * node.value.GetRotation(),0)); 
+            cube.transform.Rotate(new Vector3(0, Mathf.Rad2Deg * node.value.GetRotation(), 0));
             cube.GetComponent<Renderer>().material.color = new Color(0, 255, 0);
         }
 
@@ -216,11 +226,19 @@ public class RTTStar
         if (targetNode.predecessorEdge == null) { throw new NoPathException(); }
 
         var path = FinalizePath(ITree<IConfiguration>.GetPathToRoot(targetNode));
-        var refined = RefinePath(path, 1.5f, 150);
-        refined = RefinePath(refined, 0.5f, 150);
-        refined = RefinePath(refined, 0.1f, 150);
-        refined = RefinePath(refined, 0f, 150);
-        return refined;
+        try
+        {
+            var refined = RefinePath(path, 1.5f, 150);
+            refined = RefinePath(refined, 0.5f, 150);
+            refined = RefinePath(refined, 0.1f, 150);
+            refined = RefinePath(refined, 0f, 150);
+            return refined;
+        }
+        catch (NoPathException)
+        {
+            Debug.Log("Refine did not work");
+        }
+        return path;
     }
 
     // informed RTT* part (dynamic nodes)
@@ -246,7 +264,7 @@ public class RTTStar
             Node<IConfiguration> nodeToDiscover = graph.Add(toExplore.First());
             toExplore.RemoveAt(0);
 
-            var neighbours = GetReachableNeighbours(graph, nodeToDiscover.value, null, 1.5f, 100);
+            var neighbours = GetReachableNeighbours(graph, nodeToDiscover.value, null, 3.5f, 100);
             // neighbours need to be sorted by the cost from nodeToDiscover to neighbour + neighbour.cost()
             if (neighbours.Count == 0) { graph.Remove(nodeToDiscover); continue; } // no neighbours can reach new node so continue
 

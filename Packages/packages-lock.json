@@ -42,8 +42,8 @@
         "com.microsoft.mixedreality.toolkit.standardassets": "2.8.3"
       }
     },
-    "com.microsoft.mixedreality.toolkit.planefinding": {
-      "version": "file:MixedReality/com.microsoft.mixedreality.toolkit.planefinding-1.0.0.tgz",
+    "com.microsoft.mixedreality.toolkit.gpustats": {
+      "version": "file:MixedReality/com.microsoft.mixedreality.toolkit.gpustats-1.0.3.tgz",
       "depth": 0,
       "source": "local-tarball",
       "dependencies": {}
@@ -63,12 +63,6 @@
       "dependencies": {
         "com.microsoft.mixedreality.toolkit.foundation": "2.8.3"
       }
-    },
-    "com.microsoft.windows.mixedreality.dotnetwinrt": {
-      "version": "file:MixedReality/com.microsoft.windows.mixedreality.dotnetwinrt-0.5.2009.tgz",
-      "depth": 0,
-      "source": "local-tarball",
-      "dependencies": {}
     },
     "com.unity.collab-proxy": {
       "version": "2.3.1",

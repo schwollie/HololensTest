@@ -7,20 +7,21 @@ using Codice.Client.BaseCommands;
 
 public class MotionModel
 {
-    public static float DetectionPointSpacing = 0.06f;
+    public static float DetectionPointSpacing = 0.1f;
 
     private Mesh mesh;
     private Transform meshTransform;
 
-    public float maxBound { get;  private set; }
-    public float minBound { get;  private set; }
+    public float maxBound { get; private set; }
+    public float minBound { get; private set; }
 
     List<Vector2> pointsInBound = new(); // stores sampled points of mesh for collisison
                                          // check (no need to store bounds inside minBound)
 
-    public float safetyMargin { get;  private set; }
+    public float safetyMargin { get; private set; }
 
-    public MotionModel(Transform meshTransform, Mesh mesh, Vector2 rotationCenter, float safetyMargin = 0.1f) { 
+    public MotionModel(Transform meshTransform, Mesh mesh, Vector2 rotationCenter, float safetyMargin = 0.05f)
+    {
         this.safetyMargin = safetyMargin;
         this.mesh = mesh;
         this.meshTransform = meshTransform;
@@ -38,19 +39,19 @@ public class MotionModel
     private float FarthestPointOutside()
     {
         var farthestPoint = pointsInBound.Aggregate((a, b) => ((a.sqrMagnitude > (b).sqrMagnitude) ? a : b));
-        return farthestPoint.sqrMagnitude;
+        return farthestPoint.magnitude;
     }
 
     private float FirstPointOutside()
     {
-        float maxSpacing = Mathf.Sqrt(2* DetectionPointSpacing* DetectionPointSpacing);
-        for (float r = 0; r < maxBound; r+=0.1f)
+        float maxSpacing = Mathf.Sqrt(2 * DetectionPointSpacing * DetectionPointSpacing);
+        for (float r = 0; r < maxBound; r += 0.1f)
         {
             for (float angle = 0; angle <= Math.PI * 2; angle += 0.1f)
             {
-                Vector2 point = new Vector3(Mathf.Cos(angle)*r, Mathf.Sin(angle) * r);
+                Vector2 point = new Vector3(Mathf.Cos(angle) * r, Mathf.Sin(angle) * r);
 
-                var closestPoint = pointsInBound.AsParallel().Aggregate((a, b) => ((point - a).sqrMagnitude < (point - b).sqrMagnitude ? a : b)); 
+                var closestPoint = pointsInBound.AsParallel().Aggregate((a, b) => ((point - a).sqrMagnitude < (point - b).sqrMagnitude ? a : b));
                 if ((closestPoint - point).magnitude > maxSpacing)
                 {
                     return r;
@@ -96,7 +97,7 @@ public class MotionModel
                         pointsInBound.Add(point);
                         break;
                     }
-                }         
+                }
             }
         }
 
@@ -112,27 +113,29 @@ public class MotionModel
     {
         List<IConfiguration> poses = new();
 
+        float angleDegFrom = Mathf.Rad2Deg * from.GetRotation();
+        float angleDegTo = Mathf.Rad2Deg * to.GetRotation();
+
+        float deltaAngleDeg = Mathf.DeltaAngle(angleDegTo, angleDegFrom);
+
         int numSteps = (int)((from.GetPos() - to.GetPos()).magnitude / DetectionPointSpacing);
         for (int i = 1; i < numSteps; i++)
         {
             float progress = numSteps == 0 ? 0 : (float)(i) / ((float)(numSteps));
             var lerpedVec = Vector2.Lerp(from.GetPos(), to.GetPos(), progress);
 
-            poses.Add(new SimpleConfiguration(lerpedVec.x, lerpedVec.y, from.GetRotation()));
+            float lerpedAngle = Mathf.LerpAngle(angleDegFrom, angleDegTo, progress) * Mathf.Deg2Rad;
+            poses.Add(new SimpleConfiguration(lerpedVec.x, lerpedVec.y, lerpedAngle));
         }
 
-        float angleDegFrom = Mathf.Rad2Deg * from.GetRotation();
-        float angleDegTo = Mathf.Rad2Deg * to.GetRotation();
 
-        float deltaAngleDeg = Mathf.DeltaAngle(angleDegTo, angleDegFrom);
 
-        int angleSteps = (int)(Mathf.Abs(deltaAngleDeg) / 20f); // 20 degree steps
-        for (int i = 0; i < angleSteps; i++)
+        /*for (int i = 0; i < angleSteps; i++)
         {
             float progress = angleSteps == 0 ? 0 : (float)(i) / ((float)(angleSteps));
             float lerpedAngle = Mathf.LerpAngle(angleDegFrom, angleDegTo, progress) * Mathf.Deg2Rad;
             poses.Add(new SimpleConfiguration(to.GetPos(), lerpedAngle));
-        }
+        }*/
 
         return poses;
     }
@@ -143,7 +146,8 @@ public class MotionModel
         if (distToObstacle > maxBound + safetyMargin)
         {
             return false;
-        } else if (distToObstacle <= minBound + safetyMargin)
+        }
+        else if (distToObstacle <= minBound + safetyMargin)
         {
             return true;
         }
@@ -166,7 +170,8 @@ public class MotionModel
 
     public bool IsReachable(IConfiguration from, IConfiguration to, IObstacleMap map)
     {
-        foreach(var pose in IntermediatePoses(from, to)) {
+        foreach (var pose in IntermediatePoses(from, to))
+        {
             if (IntersectsMap(pose, map))
             {
                 return false;
@@ -195,14 +200,22 @@ public class MotionModel
                 float rot = RandomHelper.GenerateRandomFloatBothSigns(0, (float)(2 * Math.PI));
 
                 IConfiguration newPose = new SimpleConfiguration(randPos.x, randPos.y, rot);
-                
+
                 if (IsFree(newPose, map))
                 {
                     return newPose;
                 }
-                    
+
             }
         }
         return null;
+    }
+    /// <summary>
+    /// normal angle in direction of the vehicle
+    /// </summary>
+    /// <returns></returns>
+    public float NormalAngle()
+    {
+        return 0;
     }
 }
