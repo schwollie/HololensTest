@@ -119,6 +119,22 @@ public class GeneralHelpers
         return rotatedVector;
     }
 
+    /// @return transformation matrix for rotation around y by @p angle in rad and then @p translation
+    public static Matrix4x4 CreateTransformationMatrix(float angle, Vector3 translation)
+    {
+        // Create rotation matrix around Y axis
+        Quaternion rotation = Quaternion.Euler(0f, 0f, angle * Mathf.Rad2Deg);
+        Matrix4x4 rotationMatrix = Matrix4x4.Rotate(rotation);
+
+        // Create translation matrix
+        Matrix4x4 translationMatrix = Matrix4x4.Translate(translation);
+
+        // Combine rotation and translation matrices
+        Matrix4x4 finalMatrix = translationMatrix * rotationMatrix;
+
+        return finalMatrix;
+    }
+
     public static T FindMinWithCustomComparer<T>(IEnumerable<T> list, Func<T, T, int> comparer)
     {
         T min = list.First();
@@ -151,5 +167,25 @@ public class GeneralHelpers
         }
 
         return l;
+    }
+
+    // give sampling distance to hit start and target point with maxInterval
+    public static double CalcualteSamplingDistance(double distance, double maxInterval)
+    {
+        // Calculate the number of intervals based on the maximum interval
+        int numIntervals = (int)Math.Floor(distance / maxInterval);
+
+        // If only one interval is possible, return the maximum interval
+        if (numIntervals <= 1)
+        {
+            return maxInterval;
+        }
+
+        // Adjust the number of intervals to include start and target
+        numIntervals += 1;
+
+        // Calculate the actual interval considering including start and target
+        double actualInterval = distance / numIntervals;
+        return actualInterval;
     }
 }

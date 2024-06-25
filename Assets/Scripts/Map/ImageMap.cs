@@ -96,6 +96,21 @@ public class SimpleMap : IObstacleMap
         return 1 / NumPixelsPerMeter;
     }
 
+    public List<Vector2> SquareMeters()
+    {
+        List<Vector2> result = new();
+
+        for (int x = 0; x < size.x; x++)
+        {
+            for (int y = 0; y < size.y; y++)
+            {
+                result.Add(new Vector2(x, y));
+            }
+        }
+
+        return result;
+    }
+
     private bool IsFree(int x, int y)
     {
         if (x < 0 || x >= map.width || y < 0 || y >= map.height)

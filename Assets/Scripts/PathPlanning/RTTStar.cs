@@ -1,7 +1,10 @@
 using System;
+using System.CodeDom.Compiler;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Remoting.Messaging;
+using System.Security.Cryptography;
 using Unity.VisualScripting.YamlDotNet.Core.Tokens;
 using UnityEngine;
 
@@ -19,7 +22,7 @@ public class RTTStar
 
     private float CalcCost(IConfiguration a, IConfiguration b, bool includeObstacles = true)
     {
-        float distFac = 1; float rotFac = 1.0f; float nodeFac = 0.3f; float obstFac = 1.0f; float driveSidewardsFac = 2.0f;
+        float distFac = 1; float rotFac = 1.0f; float nodeFac = 0.3f; float obstFac =1.5f; float driveSidewardsFac = 2.0f;
 
         float rotCost = Mathf.Abs(Mathf.DeltaAngle(Mathf.Rad2Deg * a.GetRotation(), Mathf.Rad2Deg * b.GetRotation())) / 180;
         rotCost = rotCost * rotCost;
@@ -89,22 +92,35 @@ public class RTTStar
         return poses;
     }
 
-    private List<IConfiguration> GenerateRandomPosesWholeMap(IConfiguration startPose, IConfiguration targetPose, int nodesPerSquareMeter)
+    private List<IConfiguration> GenerateRandomPosesWholeMap(/*IConfiguration startPose, IConfiguration targetPose,*/ int nodesPerSquareMeter)
     {
 
-        List<IConfiguration> poses = new List<IConfiguration>();
+        //List<IConfiguration> poses = new List<IConfiguration>();
 
-        float rMax = (targetPose.GetPos() - startPose.GetPos()).magnitude * 4;
-        Vector2 mid = (targetPose.GetPos() + startPose.GetPos()) / 2f;
+        //float rMax = (targetPose.GetPos() - startPose.GetPos()).magnitude * 4;
+        //Vector2 mid = (targetPose.GetPos() + startPose.GetPos()) / 2f;
 
-        for (int i = 0; i < nodesPerSquareMeter; i++)
+        var squareMeters = obstacleMap.SquareMeters();
+
+        /*for (int i = 0; i < nodesPerSquareMeter; i++)
         {
             IConfiguration newPose = motionModel.NewRandomPoseInCircle(rMax, mid, obstacleMap);
             if (newPose == null) { continue; }
             poses.Add(newPose);
+        }*/
+
+        ConcurrentBag<IConfiguration> poses = new();
+        foreach (var item in squareMeters.AsParallel())
+        {
+            for (int i = 0; i < nodesPerSquareMeter; i++)
+            {
+                IConfiguration newPose = motionModel.NewRandomPoseInSquare(item, obstacleMap);
+                if (newPose == null) { continue; }
+                poses.Add(newPose);
+            }
         }
 
-        return poses;
+        return poses.ToList();
     }
 
     /// @return ascending neighbour nodes given @p radius around @p node. List is sorted by cost.
@@ -136,20 +152,20 @@ public class RTTStar
     }
 
     /// RTT* with heuristic (static number of nodes for performance sace)
-    public List<IConfiguration> FindPath(IConfiguration startPose, IConfiguration targetPose, int nodesPerSquareMeter = 1000)
+    public List<IConfiguration> FindPath(IConfiguration startPose, IConfiguration targetPose, int nodesPerSquareMeter = 3)
     {
 
         var startNode = new Node<IConfiguration>(startPose);
         var targetNode = new Node<IConfiguration>(targetPose);
 
-        if (!motionModel.IsFree(startPose, obstacleMap) || !motionModel.IsFree(startPose, obstacleMap))
+        if (!motionModel.IsFree(startPose, obstacleMap) || !motionModel.IsFree(targetPose, obstacleMap))
         {
             throw new NoPathException("Start or target Position is not valid");
         }
 
         startNode.UpdateCost(0);
 
-        List<Node<IConfiguration>> allNodes = GenerateRandomPosesWholeMap(startPose, targetPose, nodesPerSquareMeter).Select(n => new Node<IConfiguration>(n)).ToList();
+        List<Node<IConfiguration>> allNodes = GenerateRandomPosesWholeMap(/*startPose, targetPose,*/ nodesPerSquareMeter).Select(n => new Node<IConfiguration>(n)).ToList();
         Debug.Log(allNodes.Count);
 
         HashSet<Node<IConfiguration>> discoveredNodes = new();
@@ -195,7 +211,6 @@ public class RTTStar
                 if (!discoveredNodes.Contains(neighbour))
                 {
                     toDiscover.Add(neighbour);
-
                 }
                 float edgeCost = CalcCost(nodeToDiscover.value, neighbour.value);
                 if (nodeToDiscover.GetCost() + edgeCost < neighbour.GetCost())

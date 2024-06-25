@@ -11,10 +11,13 @@ using UnityEngine;
 public class TestSceneRTT : MonoBehaviour
 {
     public GameObject agent;
+    public MeshFilter agentBoundBox;
+    public GameObject agentRotCenter;
+
     public GameObject target;
     public GameObject map;
 
-    public GameObject rotCenter;
+
 
     public Texture2D mapImage;
     public SimpleMap occupancyMap;
@@ -38,11 +41,13 @@ public class TestSceneRTT : MonoBehaviour
         occupancyMap = MapLoader.LoadMap(mapImage, new Vector2(this.gameObject.transform.localScale.x * 10, this.gameObject.transform.localScale.z * 10));
 
         startPos = agent.transform.position;
-        startRot = agent.transform.rotation.y;
+        startRot = agent.transform.eulerAngles.y;
         targetPos = target.transform.position;
-        targetRot = target.transform.rotation.y;
+        targetRot = target.transform.eulerAngles.y;
 
-        model = new MotionModel(agent.transform, agent.GetComponent<MeshFilter>().mesh, GeneralHelpers.Vec3ToVec2(rotCenter.transform.localPosition));
+        target.transform.localScale =agent.transform.localScale;
+
+        model = new MotionModel(agent.transform, agentBoundBox.GetComponent<MeshFilter>().mesh, GeneralHelpers.Vec3ToVec2(agentRotCenter.transform.localPosition));
     }
 
     void GeneratePath()
@@ -54,8 +59,8 @@ public class TestSceneRTT : MonoBehaviour
         Debug.Log("GeneratePath");
         try
         {
-            path = GridRTTPathPlanner.Path(occupancyMap, model, new SimpleConfiguration(startPos.x, startPos.z, (float)startRot),
-                new SimpleConfiguration(targetPos.x, targetPos.z, (float)targetRot), 2);
+            path = GridRTTPathPlanner.Path(occupancyMap, model, new SimpleConfiguration(startPos.x, startPos.z, (float)startRot * Mathf.Deg2Rad),
+                new SimpleConfiguration(targetPos.x, targetPos.z, (float)targetRot * Mathf.Deg2Rad), 2);
 
         }
         catch (NoPathException e) { Debug.LogException(e); path = new List<IConfiguration>(); }
@@ -66,13 +71,13 @@ public class TestSceneRTT : MonoBehaviour
     {
         if ((startPos - agent.transform.position).magnitude > 0.1 ||
             (targetPos - target.transform.position).magnitude > 0.1 ||
-            Mathf.Abs((float)(startRot - agent.transform.rotation.y)) > 0.1 ||
-            Mathf.Abs((float)(targetRot - target.transform.rotation.y)) > 0.1)
+            Mathf.Abs((float)(startRot - agent.transform.eulerAngles.y)) > 0.1 ||
+            Mathf.Abs((float)(targetRot - target.transform.eulerAngles.y)) > 0.1)
         {
             startPos = agent.transform.position;
-            startRot = agent.transform.rotation.y;
+            startRot = agent.transform.eulerAngles.y;
             targetPos = target.transform.position;
-            targetRot = target.transform.rotation.y;
+            targetRot = target.transform.eulerAngles.y;
             newRun = true;
         }
         else { newRun = false; }
@@ -114,7 +119,7 @@ public class TestSceneRTT : MonoBehaviour
             MeshFilter newMeshFilter = animationAgent.AddComponent<MeshFilter>();
 
             // Copy the mesh from the original MeshFilter to the new MeshFilter
-            newMeshFilter.mesh = agent.GetComponent<MeshFilter>().mesh;
+            newMeshFilter.mesh = agentBoundBox.GetComponent<MeshFilter>().mesh;
 
             // Add a MeshRenderer component to the new GameObject (if needed)
             MeshRenderer originalMeshRenderer = agent.GetComponent<MeshRenderer>();

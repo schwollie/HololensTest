@@ -11,4 +11,6 @@ public interface IObstacleMap
     float Resolution();
 
     Vector2 RandomPosOnMap();
+
+    List<Vector2> SquareMeters();
 }
